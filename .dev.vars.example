@@ -1,0 +1,10 @@
+# Copie para .dev.vars (que está no .gitignore) para rodar `npm run dev` local.
+# Em produção estes viram secrets: `npx wrangler secret put NOME`.
+
+# Client Secret do OAuth App do GitHub (Settings > Developer settings >
+# OAuth Apps). O Client ID correspondente vai em vars no wrangler.jsonc.
+GITHUB_CLIENT_SECRET="o-client-secret-do-seu-oauth-app"
+
+# Assina o cookie de "já aprovei este cliente MCP". Gere com:
+#   openssl rand -hex 32
+COOKIE_ENCRYPTION_KEY="uma-string-aleatoria-longa-gerada-por-voce"
