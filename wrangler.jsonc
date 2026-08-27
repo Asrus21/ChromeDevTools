@@ -57,8 +57,9 @@
   // Variáveis públicas. Os SECRETS (GITHUB_CLIENT_SECRET e
   // COOKIE_ENCRYPTION_KEY) NÃO ficam aqui — use `wrangler secret put`.
   "vars": {
-    // Client ID do OAuth App do GitHub. Troque pelo seu antes do deploy.
-    "GITHUB_CLIENT_ID": "TROQUE_PELO_SEU_CLIENT_ID",
+    // Client ID do OAuth App do GitHub. Público — o par dele, o Client Secret,
+    // é secret e nunca aparece aqui (`wrangler secret put GITHUB_CLIENT_SECRET`).
+    "GITHUB_CLIENT_ID": "Ov23liyJARM5pIaKkuJp",
 
     // A trava de acesso. Sem um login aqui, NINGUÉM consegue autorizar —
     // inclusive você. Separe por vírgula para permitir mais de uma conta.
