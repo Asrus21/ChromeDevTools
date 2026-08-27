@@ -1,0 +1,100 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chrome-devtools-mcp",
+  "main": "src/index.ts",
+  // Precisa ser 2025-09-15 ou mais recente para o reaproveitamento de sessões
+  // do Browser Rendering funcionar.
+  "compatibility_date": "2026-08-25",
+  // nodejs_compat é exigido pelo @cloudflare/puppeteer.
+  // global_fetch_strictly_public impede que este Worker alcance serviços
+  // internos da Cloudflare por fetch — ele só precisa falar com o GitHub.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "observability": {
+    "enabled": true,
+    // Rastreia chamadas de ferramenta, fetch, KV etc. — aparece na aba
+    // Observability do painel. Aditivo, não muda comportamento nenhum.
+    "traces": {
+      "enabled": true
+    }
+  },
+
+  // O Chromium headless gerenciado pela Cloudflare. É este binding que custa
+  // dinheiro: cobra-se por tempo de navegador ABERTO, não por comando.
+  "browser": {
+    "binding": "BROWSER"
+  },
+
+  // O Durable Object guarda a sessão MCP (uma por conexão do cliente) e, com
+  // ela, o id da sessão de navegador, o registro de abas e o histórico de
+  // console/rede que sobrevive às navegações.
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_OBJECT",
+        "class_name": "ChromeDevToolsMCP"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ChromeDevToolsMCP"]
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "78e66cd7945f403bbe0b4cc26649a398"
+    },
+    {
+      "binding": "BROWSER_KV",
+      "id": "3147c88f8366458a91454743875331e6"
+    }
+  ],
+
+  // Variáveis públicas. Os SECRETS (GITHUB_CLIENT_SECRET e
+  // COOKIE_ENCRYPTION_KEY) NÃO ficam aqui — use `wrangler secret put`.
+  "vars": {
+    // Client ID do OAuth App do GitHub. Troque pelo seu antes do deploy.
+    "GITHUB_CLIENT_ID": "TROQUE_PELO_SEU_CLIENT_ID",
+
+    // A trava de acesso. Sem um login aqui, NINGUÉM consegue autorizar —
+    // inclusive você. Separe por vírgula para permitir mais de uma conta.
+    "ALLOWED_GITHUB_LOGINS": "Asrus21",
+
+    // ------------------------------------------------------------- custo
+    // Estes defaults são para o plano Workers Free: 10 minutos de navegador
+    // por dia e 3 sessões concorrentes. No Workers Paid (10 horas/mês, depois
+    // US$ 0,09 por hora-navegador) dá para afrouxar — ver o README.
+
+    // Teto de segundos de navegador por dia UTC. 480s = 8 min, deixando uma
+    // folga sobre os 10 min do free tier.
+    "BROWSER_DAILY_BUDGET_SECONDS": "480",
+
+    // Quanto tempo a Cloudflare mantém o navegador vivo sem receber comando.
+    // 60s é o padrão dela e o mínimo aceito; o máximo é 600. Subir isto torna
+    // sequências longas mais fluidas e gasta mais orçamento parado.
+    "BROWSER_KEEP_ALIVE_SECONDS": "60",
+
+    // Nosso alarme fecha a sessão antes do keep_alive estourar, para parar o
+    // relógio da cobrança em vez de esperar o timeout.
+    "BROWSER_IDLE_CLOSE_SECONDS": "45",
+
+    // Abas simultâneas. Todas dividem a memória do mesmo Chromium.
+    "BROWSER_MAX_PAGES": "2",
+
+    // Restringe a navegação a estes domínios (ex.: "example.com,*.github.com").
+    // Vazio = sem restrição. A trava é aplicada pela Cloudflare na criação da
+    // sessão e não pode ser afrouxada por uma conexão posterior.
+    "BROWSER_ALLOWED_DOMAINS": "",
+
+    // O que fazer com alert/confirm/prompt sem ninguém para responder:
+    // "dismiss" (padrão, conservador) ou "accept".
+    "BROWSER_DIALOG_DEFAULT": "dismiss",
+
+    // Timeout padrão de navegação e de wait_for, em ms.
+    "BROWSER_TIMEOUT_MS": "30000"
+  }
+}
